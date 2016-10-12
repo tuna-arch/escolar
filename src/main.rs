@@ -1,3 +1,6 @@
+use std::fs::File;
+use std::io::Read;
+
 type Op = Fn(u16, u16);
 
 fn op_mov(one: u16, two: u16) {
@@ -50,5 +53,39 @@ fn dispatch(opcode: u16, one: u16, two: u16) {
     };
 }
 
+fn run_program(program: &[u16]) {
+    //...
+}
+
+fn load_file(filename: String) {
+
+}
+
+fn read_program_file(filename: String) -> &'static [u16] {
+    // Read file as a series of u8s (despite it being u16's).
+    let mut file = File::open(filename).unwrap();
+    let mut buf  = [0u8; 1024];
+    file.read(&mut buf).unwrap();
+
+    // Recast as u16s. I have no idea if this actually works?
+    let program: &[u16] = unsafe {
+        std::slice::from_raw_parts(buf.as_ptr() as *const u16, buf.len() / 2)
+    };
+
+    program.clone()
+}
+
+fn print_help() {
+    println!("Usage: escolar PROGRAM");
+}
+
 fn main() {
+    let args: Vec<String> = std::env::args().collect();
+
+    if args.len() != 2 || args[0] == "--help" || args[0] == "-h" {
+        print_help();
+        return;
+    }
+
+    run_program(read_program_file(args[1].clone()));
 }
