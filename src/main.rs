@@ -11,13 +11,13 @@ const FLAG_CARRY: u16 = 0b0001;
 const FLAG_ZERO:  u16 = 0b0010;
 
 fn op_mov(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
-    memory[addr] = value;
+    memory[addr as usize] = value;
 
     return ip;
 }
 
 fn op_add(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
-    memory[0] = memory[addr] + value;
+    memory[0] = memory[addr as usize] + value;
 
     return ip;
 }
@@ -27,33 +27,41 @@ fn op_nand(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
 }
 
 fn op_shl(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
-    memory[0] = memory[addr] << value;
+    memory[0] = memory[addr as usize] << value;
 
     return ip;
 }
 
 fn op_shr(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
-    memory[0] = memory[addr] >> value;
+    memory[0] = memory[addr as usize] >> value;
 
     return ip;
 }
 
 fn op_jz(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
     if flags & FLAG_ZERO != 0 {
-        let ip = memory[addr];
+        let ip = memory[addr as usize];
     }
 
     return ip;
 }
 
 fn op_lt(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
-    memory[0] = memory[addr] < value;
+    if memory[addr as usize] < value {
+        memory[0] = 1u16;
+    } else {
+        memory[0] = 0u16;
+    }
 
     return ip;
 }
 
 fn op_gt(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
-    memory[0] = memory[addr] > value;
+    if memory[addr as usize] > value {
+        memory[0] = 1u16;
+    } else {
+        memory[0] = 0u16;
+    }
 
     return ip;
 }
@@ -63,8 +71,9 @@ fn op_in(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
 }
 
 fn op_out(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
-    match memory[addr] {
-        0 => print!("{}", value as char), // display.
+    match memory[addr as usize] {
+        0 => print!("{}", value as u8 as char), // display.
+        _ => panic!("no such output device: {}", value),
     }
 
     return ip;
@@ -76,18 +85,18 @@ fn op_undefined(ip: u16, flags: &u16, memory: &[u16], opcode: u16, addr: u16, va
 
 fn dispatch(ip: u16, flags: &u16, memory: &[u16], opcode: u16, addr: u16, value: u16) -> u16 {
     match opcode {
-        0b0000 => op_mov(ip, flags, &memory, one, two),
-        0b0001 => op_add(ip, flags, &memory, one, two),
-        0b0010 => op_nand(ip, flags, &memory, one, two),
-        0b0011 => op_shl(ip, flags, &memory, one, two),
-        0b0100 => op_shr(ip, flags, &memory, one, two),
-        0b0101 => op_jz(ip, flags, &memory, one, two),
-        0b0110 => op_lt(ip, flags, &memory, one, two),
-        0b0111 => op_gt(ip, flags, &memory, one, two),
+        0b0000 => op_mov(ip, flags, &memory, addr, value),
+        0b0001 => op_add(ip, flags, &memory, addr, value),
+        0b0010 => op_nand(ip, flags, &memory, addr, value),
+        0b0011 => op_shl(ip, flags, &memory, addr, value),
+        0b0100 => op_shr(ip, flags, &memory, addr, value),
+        0b0101 => op_jz(ip, flags, &memory, addr, value),
+        0b0110 => op_lt(ip, flags, &memory, addr, value),
+        0b0111 => op_gt(ip, flags, &memory, addr, value),
         // No 0b1000-0b1101.
-        0b1110 => op_in(ip, flags, &memory, one, two),
-        0b1111 => op_out(ip, flags, &memory, one, two),
-        _      => op_undefined(ip, flags, &memory, opcode, one, two),
+        0b1110 => op_in(ip, flags, &memory, addr, value),
+        0b1111 => op_out(ip, flags, &memory, addr, value),
+        _      => op_undefined(ip, flags, &memory, opcode, addr, value),
     }
 }
 
@@ -102,14 +111,14 @@ fn run_program(program: Vec<u16>) {
 
     loop {
         let opcode = state[ip as usize];
-        let value1 = state[ip as usize + 1];
-        let value2 = state[ip as usize + 2];
+        let addr   = state[ip as usize + 1];
+        let value  = state[ip as usize + 2];
 
         if opcode & 0b0001_0000 != 0 { // if the Pointer modifier is set.
-            let value2 = state[value2 as usize];
+            let value = state[value as usize];
         }
 
-        ip = dispatch(ip, &flags, &state, opcode, value1, value2);
+        ip = dispatch(ip, &flags, &state, opcode, addr, value);
     }
 }
 
@@ -127,9 +136,9 @@ fn read_program_file(filename: String) -> Vec<u16> {
             Ok(val) => {
                 program.push(val);
             },
-            Err(_) => {
-                break;
-            }
+                Err(_) => {
+                    break;
+                }
         }
     }
 
