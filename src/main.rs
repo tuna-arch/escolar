@@ -1,5 +1,9 @@
+extern crate byteorder;
+
+use byteorder::{BigEndian, ReadBytesExt};
 use std::fs::File;
 use std::io::Read;
+use std::io::Cursor;
 
 type Op = Fn(u16, u16);
 
@@ -53,24 +57,29 @@ fn dispatch(opcode: u16, one: u16, two: u16) {
     };
 }
 
-fn run_program(program: &[u16]) {
-    //...
+fn run_program(program: Vec<u16>) {
+    println!("{:?}", program)
 }
 
-fn load_file(filename: String) {
-
-}
-
-fn read_program_file(filename: String) -> &'static [u16] {
-    // Read file as a series of u8s (despite it being u16's).
+fn read_program_file(filename: String) -> Vec<u16> {
+    // Read file as a series of u8s (despite it being u16's).dd
     let mut file = File::open(filename).unwrap();
-    let mut buf  = [0u8; 1024];
-    file.read(&mut buf).unwrap();
+    let mut buf: Vec<u8> = vec![];
+    file.read_to_end(&mut buf).unwrap();
 
-    // Recast as u16s. I have no idea if this actually works?
-    let program: &[u16] = unsafe {
-        std::slice::from_raw_parts(buf.as_ptr() as *const u16, buf.len() / 2)
-    };
+    // Recast as u16s.
+    let mut reader = Cursor::new(buf);
+    let mut program: Vec<u16> = vec![];
+    loop {
+        match reader.read_u16::<BigEndian>() {
+            Ok(val) => {
+                program.push(val);
+            },
+            Err(_) => {
+                break;
+            }
+        }
+    }
 
     program.clone()
 }
