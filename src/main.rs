@@ -5,60 +5,89 @@ use std::fs::File;
 use std::io::Read;
 use std::io::Cursor;
 
-type Op = Fn(u16, u16);
+type Op = Fn(u16, &u16, &[u16], u16, u16);
 
-fn op_mov(one: u16, two: u16) {
+fn op_mov(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    return ip;
 }
 
-fn op_add(one: u16, two: u16) {
+fn op_add(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    return ip;
 }
 
-fn op_nand(one: u16, two: u16) {
+fn op_nand(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    return ip;
 }
 
-fn op_shl(one: u16, two: u16) {
+fn op_shl(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    return ip;
 }
 
-fn op_shr(one: u16, two: u16) {
+fn op_shr(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    return ip;
 }
 
-fn op_jz(one: u16, two: u16) {
+fn op_jz(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    return ip;
 }
 
-fn op_lt(one: u16, two: u16) {
+fn op_lt(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    return ip;
 }
 
-fn op_gt(one: u16, two: u16) {
+fn op_gt(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    return ip;
 }
 
-fn op_in(one: u16, two: u16) {
+fn op_in(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    return ip;
 }
 
-fn op_out(one: u16, two: u16) {
+fn op_out(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    return ip;
 }
 
-fn op_undefined(one: u16, two: u16) {
+fn op_undefined(ip: u16, flags: &u16, memory: &[u16], opcode: u16, one: u16, two: u16) -> u16 {
+    panic!("invalid opcode: {}", opcode);
 }
 
-fn dispatch(opcode: u16, one: u16, two: u16) {
+fn dispatch(ip: u16, flags: &u16, memory: &[u16], opcode: u16, one: u16, two: u16) -> u16 {
     match opcode {
-        0b0000 => op_mov(one, two),
-        0b0001 => op_add(one, two),
-        0b0010 => op_nand(one, two),
-        0b0011 => op_shl(one, two),
-        0b0100 => op_shr(one, two),
-        0b0101 => op_jz(one, two),
-        0b0110 => op_lt(one, two),
-        0b0111 => op_gt(one, two),
+        0b0000 => op_mov(ip, flags, &memory, one, two),
+        0b0001 => op_add(ip, flags, &memory, one, two),
+        0b0010 => op_nand(ip, flags, &memory, one, two),
+        0b0011 => op_shl(ip, flags, &memory, one, two),
+        0b0100 => op_shr(ip, flags, &memory, one, two),
+        0b0101 => op_jz(ip, flags, &memory, one, two),
+        0b0110 => op_lt(ip, flags, &memory, one, two),
+        0b0111 => op_gt(ip, flags, &memory, one, two),
         // No 0b1000-0b1101.
-        0b1110 => op_in(one, two),
-        0b1111 => op_out(one, two),
-        _      => op_undefined(one, two),
-    };
+        0b1110 => op_in(ip, flags, &memory, one, two),
+        0b1111 => op_out(ip, flags, &memory, one, two),
+        _      => op_undefined(ip, flags, &memory, opcode, one, two),
+    }
 }
 
 fn run_program(program: Vec<u16>) {
-    println!("{:?}", program)
+    let mut ip: u16 = 0;
+    let mut flags: u16 = 0;
+    let mut state = [0u16; 1024]; // 1kb of memory.
+
+    for i in 0..program.len() {
+        state[i] = program[i];
+    }
+
+    loop {
+        let opcode = state[ip as usize];
+        let value1 = state[ip as usize + 1];
+        let value2 = state[ip as usize + 2];
+
+        if opcode & 0b0001_0000 != 0 { // if the Pointer modifier is set.
+            let value2 = state[value2 as usize];
+        }
+
+        ip = dispatch(ip, &flags, &state, opcode, value1, value2);
+    }
 }
 
 fn read_program_file(filename: String) -> Vec<u16> {
