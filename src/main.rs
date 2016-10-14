@@ -7,6 +7,9 @@ use std::io::Cursor;
 
 type Op = Fn(u16, &u16, &[u16], u16, u16);
 
+const FLAG_CARRY: u16 = 0b0001;
+const FLAG_ZERO: u16  = 0b0010;
+
 fn op_mov(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
     return ip;
 }
@@ -28,6 +31,10 @@ fn op_shr(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
 }
 
 fn op_jz(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+    if flags & FLAG_ZERO != 0 {
+        let ip = one;
+    }
+
     return ip;
 }
 
