@@ -8,57 +8,73 @@ use std::io::Cursor;
 type Op = Fn(u16, &u16, &[u16], u16, u16);
 
 const FLAG_CARRY: u16 = 0b0001;
-const FLAG_ZERO: u16  = 0b0010;
+const FLAG_ZERO:  u16 = 0b0010;
 
-fn op_mov(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+fn op_mov(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
+    memory[addr] = value;
+
     return ip;
 }
 
-fn op_add(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+fn op_add(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
+    memory[0] = memory[addr] + value;
+
     return ip;
 }
 
-fn op_nand(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+fn op_nand(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
     return ip;
 }
 
-fn op_shl(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+fn op_shl(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
+    memory[0] = memory[addr] << value;
+
     return ip;
 }
 
-fn op_shr(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+fn op_shr(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
+    memory[0] = memory[addr] >> value;
+
     return ip;
 }
 
-fn op_jz(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+fn op_jz(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
     if flags & FLAG_ZERO != 0 {
-        let ip = one;
+        let ip = memory[addr];
     }
 
     return ip;
 }
 
-fn op_lt(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+fn op_lt(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
+    memory[0] = memory[addr] < value;
+
     return ip;
 }
 
-fn op_gt(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+fn op_gt(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
+    memory[0] = memory[addr] > value;
+
     return ip;
 }
 
-fn op_in(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+fn op_in(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
     return ip;
 }
 
-fn op_out(ip: u16, flags: &u16, memory: &[u16], one: u16, two: u16) -> u16 {
+fn op_out(ip: u16, flags: &u16, memory: &[u16], addr: u16, value: u16) -> u16 {
+    match memory[addr] {
+        0 => print!("{}", value as char), // display.
+    }
+
     return ip;
 }
 
-fn op_undefined(ip: u16, flags: &u16, memory: &[u16], opcode: u16, one: u16, two: u16) -> u16 {
+fn op_undefined(ip: u16, flags: &u16, memory: &[u16], opcode: u16, addr: u16, value: u16) -> u16 {
     panic!("invalid opcode: {}", opcode);
 }
 
-fn dispatch(ip: u16, flags: &u16, memory: &[u16], opcode: u16, one: u16, two: u16) -> u16 {
+fn dispatch(ip: u16, flags: &u16, memory: &[u16], opcode: u16, addr: u16, value: u16) -> u16 {
     match opcode {
         0b0000 => op_mov(ip, flags, &memory, one, two),
         0b0001 => op_add(ip, flags, &memory, one, two),
